@@ -1,0 +1,226 @@
+---
+layout: base
+---
+
+{% include default-header.html %}
+
+{% assign topic = site.data[page.topic_name] %}
+{% assign contributors = site.data['contributors'] %}
+{% assign instances = site.data['instances'] %}
+
+<div class="container main-content">
+    <section>
+        <h1>{{ topic.title }}</h1>
+        <p>{{ topic.summary }}</p>
+
+        {% if topic.requirements %}
+        <h2 id="requirements">Requirements</h2>
+        <p>Before diving into this topic, we recommend you to have a look at:</p>
+
+        <ul>
+            {% for requirement in topic.requirements %}
+                <li>
+                    {% if requirement.type == "internal" %}
+                    <a href="{{ site.baseurl }}/topics/{{ requirement.link }}">{{ requirement.title }}</a>
+                    {% elsif material.type == "external" %}
+                    <a href="{{ requirement.link }}">{{ requirement.title }}</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <h2 id="material">Material</h2>
+        <table class="table table-responsive table-striped">
+            <tr>
+                <th>Lesson</th>
+                <th>Slides</th>
+                <th>Hands-on</th>
+
+                {% if topic.type == "use" %}
+                <th>Input dataset</th>
+                <th>Workflows</th>
+                <th>Galaxy tour</th>
+                {% endif %}
+
+                {% if instances[topic.name].supported %}
+                <th>Galaxy instances</th>
+                {% endif %}
+            </tr>
+
+            {% for material in topic.material %}
+                {% if material.enable != "false" %}
+                        <script type="application/ld+json">
+                            {% include material.jsonld content=material %}
+                        </script>
+                    <tr>
+                        <td>
+                            {{ material.title }}
+                            {% if material.tags %}
+                                <div class="">
+                                    {% for tag in material.tags %}
+                                        <span class="label label-default">{{ tag }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </td>
+                        {% if material.type == "introduction" %}
+                            <td>
+                                {% if material.slides %}
+                                <a href="{{ site.baseurl }}/topics/{{ topic.name }}/slides/{{ material.name }}.html">
+                                  {% icon slides %}
+                                </a>
+                                {% endif %}
+                            </td>
+                            <td></td>
+                            {% if topic.type == "use" %}
+                                <td></td>
+                                <td></td>
+                            {% endif %}
+                            {% if instances[topic.name].supported %}
+                                <td></td>
+                            {% endif %}
+                        {% elsif material.type == "tutorial" %}
+                            <td>
+                                {% if material.slides %}
+                                <a href="{{ site.baseurl }}/topics/{{ topic.name }}/tutorials/{{ material.name }}/slides.html">
+                                  {% icon slides %}
+                                </a>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if material.hands_on == "external" %}
+                                <a href="{{ material.hands_on_url }}">
+                                  {% icon tutorial %}
+                                </a>
+                                {% elsif material.hands_on == "github" %}
+                                <a href="{{ site.github_repository }}/tree/master/topics/{{ topic.name }}/tutorials/{{ material.name }}/tutorial.md">
+                                  {% icon tutorial %}
+                                </a>
+                                {% elsif material.hands_on %}
+                                <a href="{{ site.baseurl }}/topics/{{ topic.name }}/tutorials/{{ material.name }}/tutorial.html">
+                                  {% icon tutorial %}
+                                </a>
+                                {% endif %}
+                            </td>
+
+                            {% if topic.type == "use" %}
+                                <td>
+                                    {% if material.zenodo_link != "" %}
+                                    <a href="{{ material.zenodo_link }}">
+                                      {% icon zenodo_link %}
+                                    </a>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if material.workflows %}
+                                        <a href="{{ site.github_repository  }}/tree/master/topics/{{ topic.name }}/tutorials/{{ material.name }}/workflows/" title="{{ workflow.title }}" alt="{{ material.title }} workflows">
+                                            {% icon workflow %}
+                                        </a>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if material.galaxy_tour %}
+                                    <a href="{{ site.github_repository }}/tree/master/topics/{{ topic.name }}/tutorials/{{ material.name }}/tours/">
+                                        {% icon interactive_tour %}
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                            {% if instances[topic.name].supported %}
+                                <td>
+                                {% if instances[topic.name]['tutorials'][material.name].supported %}
+                                    <a href="#" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false" title="Where to run the tutorial">
+                                        {% icon instances %}
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                    {% for inst in instances[topic.name]['tutorials'][material.name]['instances'] %}
+                                        {% if inst[1].supported %}
+                                        <a class="dropdown-item" href="{{ inst[1].url }}" title="{{ inst[0] }}">
+                                            {{ inst[0] }}
+                                        </a>
+                                        {% endif %}
+                                    {% endfor %}
+                                    </ul>
+                                {% endif %}
+                                </td>
+                            {% endif %}
+                        {% endif %}
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </table>
+
+        <h2 id="docker_image">Galaxy instances</h2>
+        <p>You can use a public Galaxy instance which has been tested for the availability of the used tools. They are listed along with the tutorials above.</p>
+        {% if topic.docker_image and topic.docker_image != "" %}
+            <p>You can also use the following Docker image for these tutorials:</p>
+            <pre><code>docker run -d -p 8080:80 {{ topic.docker_image }}</code></pre>
+            <p>It will launch a flavored Galaxy instance available on <a href="http://localhost:8080">http://localhost:8080</a>.</p>
+        {% endif %}
+
+        <h2 id="maintainers">Maintainers</h2>
+        <p>This material is maintained by:</p>
+        <ul>
+        {% for maintainer in topic.maintainers %}
+            <li>
+                <a href="{{ site.baseurl }}/hall-of-fame#{{ maintainer }}">{{ contributors[maintainer].name }}</a>
+                {% if contributors[maintainer].maintainer_contact %}
+                    {% if contributors[maintainer].maintainer_contact == 'email' %}
+                    (<a href="mailto:{{ contributors[maintainer].email }}">Contact {% icon email %}</a> )
+                    {% elsif contributors[maintainer].maintainer_contact == 'gitter' %}
+                    (<a href="https://gitter.im/{{ contributors[maintainer].gitter }}">Contact {% icon gitter %}</a> )
+                    {% else %}
+                    (<a href="{{ contributors[maintainer].maintainer_contact }}">Contact</a>)
+                    {% endif %}
+
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+
+        <p>
+            <em>For any question related to this topic and the content, you can contact them or visit our <a href="https://gitter.im/Galaxy-Training-Network/Lobby">Gitter channel</a>.</em>
+        </p>
+
+        <h2 id="contributors">Contributors</h2>
+        <p>This material was contributed to by:</p>
+
+        <!-- get list of unique contributors for all materials in the topic -->
+        {% assign contributors_list = "" | split: ',' %}
+        {% for material in topic.material %}
+            {% for c in material.contributors %}
+                {% if contributors_list contains c %}
+                {% else %}
+                    {% assign contributors_list = contributors_list | push: c %}
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+
+        <ul>
+        {% for username in contributors_list %}
+            {% assign contributor = contributors[username] %}
+            <li>
+                <a href="{{ site.baseurl }}/hall-of-fame#{{ username }}"> {{ contributor.name }}</a>
+            </li>
+        {% endfor %}
+        </ul>
+
+        {% if topic.references %}
+        <h2 id="references">References</h2>
+        <ul>
+        {% for reference in topic.references %}
+            <li class="citation">
+                <strong>{{ reference.authors }}:</strong> <a href="{{ reference.link }}">{{ reference.title }}</a>
+                {% if reference.summary != "" %}
+                <br><cite>{{ reference.summary }}</cite>
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+    </section>
+</div>
+
+{% include default-footer.html %}
